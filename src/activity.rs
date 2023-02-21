@@ -1,6 +1,7 @@
 //! Provides an interface for building activities to send
 //! to Discord via [`DiscordIpc::set_activity`](crate::DiscordIpc::set_activity).
 use serde_derive::Serialize;
+use serde_repr::*;
 
 /// A struct representing a Discord rich presence activity
 ///
@@ -8,6 +9,10 @@ use serde_derive::Serialize;
 /// for fluency
 #[derive(Serialize, Clone)]
 pub struct Activity<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "type")]
+    activity_type: Option<ActivityType>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     state: Option<&'a str>,
 
@@ -93,6 +98,26 @@ pub struct Secrets<'a> {
     r#match: Option<&'a str>,
 }
 
+/// An enum representing the different avaliable activity types
+/// Documented here: https://discord.com/developers/docs/topics/gateway-events#activity-object-activity-types
+#[derive(Serialize_repr, Clone)]
+#[repr(u8)]
+pub enum ActivityType {
+    /// Playing {name} - Example: "Playing Rocket League"
+    Game = 0,
+    /// Streaming {details} - Example: "Streaming Rocket League"
+    /// This type only supports https://twitch.tv/ and https://youtube.com/ URLs
+    Streaming = 1,
+    /// Listening to {name} - Example: "Listening to Spotify"
+    Listening = 2,
+    /// Watching {name} - Example: "Watching YouTube Together"
+    Watching = 3,
+    /// Custom
+    Custom = 4,
+    /// Competing in {name} - Example: Competing in Arena World Champions
+    Competing = 5,
+}
+
 /// A struct representing the buttons that are
 /// attached to an `Activity`
 ///
@@ -107,6 +132,7 @@ impl<'a> Activity<'a> {
     /// Creates a new `Activity`
     pub fn new() -> Self {
         Activity {
+            activity_type: None,
             state: None,
             details: None,
             assets: None,
@@ -115,6 +141,12 @@ impl<'a> Activity<'a> {
             secrets: None,
             timestamps: None,
         }
+    }
+
+    /// Sets the type of the activity
+    pub fn activity_type(mut self, activity_type: ActivityType) -> Self {
+        self.activity_type = Some(activity_type);
+        self
     }
 
     /// Sets the state of the activity
